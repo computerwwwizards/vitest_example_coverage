@@ -1,3 +1,6 @@
+---
+
+---
 # Vitest Workspace Coverage Aggregation Implementation
 
 This is a PNPM workspace (monorepo) for testing coverage aggregation across multiple applications.
