@@ -1,0 +1,22 @@
+{
+  "name": "templates",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.14.0",
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "@vitest/coverage-v8": "^4.0.8",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.8"
+  }
+}
