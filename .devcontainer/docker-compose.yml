@@ -40,6 +40,18 @@ services:
     ports:
       - "3000:3000"
       - "3001:3001"
+  sonarqube:
+    image: sonarqube:community
+    container_name: sq-poc-dev
+    ports:
+      - "9000:9000"
+    # No volumes: ephemeral H2 DB, no persistence
+    environment:
+      # No SONAR_JDBC_* to keep embedded H2
+      TZ: UTC
+    networks:
+      - devnet
+      - ingress_net
 networks:
   devnet:
     driver: bridge

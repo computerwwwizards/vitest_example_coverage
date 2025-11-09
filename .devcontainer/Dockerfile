@@ -27,5 +27,6 @@ RUN curl -fsSL https://get.pnpm.io/install.sh | sh
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 RUN curl -fsSL https://fnm.vercel.app/install | zsh
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN curl -s "https://get.sdkman.io?ci=true" | bash
 
 CMD ["tail", "-f", "/dev/null"]

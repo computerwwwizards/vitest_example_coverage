@@ -7,13 +7,18 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "sonar:prep": "pnpm test:coverage && test -f coverage/lcov.info",
+    "sonar:scan": "sonar",
+    "sonar:upload": "pnpm sonar:prep && pnpm sonar:scan",
+    "sonar:upload:remote": "SONAR_HOST_URL=$SONAR_REMOTE_URL pnpm sonar:prep && pnpm sonar:scan"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.14.0",
   "devDependencies": {
+    "@sonar/scan": "^4.3.2",
     "@types/node": "^24.10.0",
     "@vitest/coverage-v8": "^4.0.8",
     "typescript": "^5.9.3",
