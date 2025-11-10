@@ -1,0 +1,1 @@
+DO NOT DELETE THE LCOV.INFO, is for testing purposes only in this project.

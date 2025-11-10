@@ -1,4 +1,5 @@
 # Tasks: SonarQube Coverage Categorization Tool
+Read [!](./constitution.md) and [!](./problem.md)
 
 ## Context
 Based on the refined problem definition and existing workspace structure, we need to build a tool that fetches coverage data from SonarQube Web API and generates categorized CSV reports.
