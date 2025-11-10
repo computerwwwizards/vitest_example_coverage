@@ -26,7 +26,7 @@ services:
     user: ubuntu
     working_dir: /home/ubuntu
     volumes:
-      - ../:/home/ubuntu/workspace
+      - ../../:/home/ubuntu/workspace
       - ./.npmrc/:/home/ubuntu/.npmrc
     command: sleep infinity
 
