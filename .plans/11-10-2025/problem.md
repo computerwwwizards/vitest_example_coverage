@@ -1,5 +1,3 @@
-<!-- Keep this file minimal: high-level problem only. Detailed implementation lives in `generator-reporter.md`. -->
-
 # Problem: Centralized Coverage Categorization
 
 We have several (mainly frontend) repositories already analyzed in SonarQube. We need a single CSV report listing each repository's current coverage percentage and assigning one of three categories based on a configurable threshold.
@@ -12,9 +10,4 @@ Categories (Spanish labels):
 Input (at runtime): SonarQube server URL, access token, and a minimum coverage threshold (default 50%).
 Output: CSV with columns: `repository,coverage_percent,category`.
 
-Open points pushed to implementation plan: which branch, exact coverage metric name, how to filter "frontend", sorting, extra columns (timestamp, branch), multilingual support.
-
 See `generator-reporter.md` for full plan and decisions.
-
----
-Previous draft retained in version control; removed here for brevity.
