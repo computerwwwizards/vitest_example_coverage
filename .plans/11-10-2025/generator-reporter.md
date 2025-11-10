@@ -1,80 +1,34 @@
-To check resources [Contitution](./constitution.md)
 
----
 
-# coverage-reporter – Implementation Plan
+# Plan para crear tool - reporte de coverage
 
-Purpose:
-Generate a CSV summarizing test coverage for selected frontend SonarQube projects, assigning each to one of three categories based on a configurable threshold.
+## 1. Setup y Configuración de la Herramienta
+- El tool será un CLI en Node.js ubicado en `packages/coverage-reporter`.
+- El proyecto usará ESM (`"type": "module"` en `package.json`).
+- Solo se permite el uso de APIs nativas de Node.js y las siguientes dependencias:
+  - `tsx`: Ejecutar TypeScript directamente sin compilar.
+  - `dotenv`: Leer variables de entorno desde archivos `.env`.
+  - `papaparse`: Convertir objetos JavaScript a formato CSV.
+- No se deben usar otras librerías externas.
+- Todas las operaciones de red (API) y archivos deben hacerse con módulos nativos (`https`, `fs`, etc.), excepto CSV/env que usan las dependencias listadas.
+- Inputs requeridos por CLI: `TOKEN` (API token de SonarQube) y `HOST` (URL base del servidor SonarQube).
 
-Categories (Spanish):
-1. “Sin coverage” – coverage exactly 0% or metric missing
-2. “No pasa del mínimo esperado” – 0 < coverage < threshold
-3. “Si pasa el mínimo esperado” – coverage ≥ threshold
+## 2. Obtención de Información desde SonarQube
+- Paso 1: Obtener todos los proyectos usando:
+  ```
+  GET /api/projects/search
+  ```
+  - Se pueden usar parámetros de búsqueda como `q=fe` para filtrar por nombre.
+- Paso 2: Para cada proyecto, obtener el coverage:
+  ```
+  GET /api/measures/component?component=<projectKey>&metricKeys=coverage
+  ```
+  - Reemplazar `<projectKey>` por el key de cada proyecto.
 
-Inputs (CLI flags or environment variables):
-- SONAR_HOST_URL / --sonar-url (required)
-- SONAR_TOKEN / --token (required; never logged)
-- MIN_COVERAGE_THRESHOLD / --threshold (default 50)
-- PROJECT_PREFIX / --project-prefix (optional)
-- PROJECT_LIST_PATH / --project-list (optional, newline-separated keys)
-- BRANCH / --branch (optional; only needed for non-default branch)
-- METRIC_KEY / --metric-key (default: coverage)
-- OUTPUT / --output (default: coverage_report_<YYYY-MM-DD>.csv)
-
-Precedence: CLI flag overrides environment variable.
-
-Project selection:
-- If --project-list: use those keys.
-- Else if --project-prefix: all projects whose key starts with prefix.
-- Else: fail and request explicit scope.
-
-Coverage metric:
-- Default: coverage (line + condition coverage). Can override with --metric-key.
-
-CSV output:
-- Columns: repository,coverage_percent,category (comma, UTF-8, header row)
-- repository = project key
-- coverage_percent: up to two decimals
-- Sorted alphabetically by repository
-
-Categorization logic:
-if coverage is null or 0 → “Sin coverage”
-else if coverage < threshold → “No pasa del mínimo esperado”
-else → “Si pasa el mínimo esperado”
-
-Edge cases:
-- Missing metric treated as 0
-- API failures for some projects: log warning, include others, treat missing as 0
-
-Dependencies:
-- typescript (dev)
-- tsx (dev)
-- dotenv (runtime, if .env used)
-- papaparse
-
-Error handling & exit codes:
-- 0: success
-- 1: config/argument error
-- 2: authentication (401/403)
-- 3: fatal (network, malformed API)
-
-Pagination & performance:
-- Use /api/projects/search (page loop, page size 100)
-- Fetch measures per project with concurrency (e.g. 8)
-
-Security:
-- Never print or log the token
-
-Branch:
-- By default, fetches coverage for the main branch.
-- If --branch is provided, fetch coverage for that branch (optional parameter in API call).
-
-Steps:
-1. Scaffold workspace package: packages/coverage-reporter
-2. Implement config parsing (for parsing use papaparse)
-3. Discover projects
-4. Fetch coverage measures
-5. Categorize and write CSV
-6. Add minimal unit test for categorization
+## 3. Generar el Reporte
+- Calcular la categoría a la que pertenece cada proyecto (según lógica propia).
+- Crear un archivo CSV con las columnas:
+  - `nombre_de_repositorio` (nombre del repo)
+  - `porcentaje_coverage` (coverage %)
+  - `category` (categoría asignada)
 
