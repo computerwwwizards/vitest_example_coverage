@@ -5,5 +5,5 @@
 
 This is a PNPM workspace (monorepo) for testing coverage aggregation across multiple applications.
 
-**Problem Definition**: See [problem.md](./problem.md) for comprehensive technical requirements.
+Check for constituion of all repo [here](./.ai/constitution.md)
 
