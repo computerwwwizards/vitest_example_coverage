@@ -27,7 +27,7 @@ export class SonarQubeApiError extends Error {
  * Query filter for project name patterns
  */
 export class ProjectNameQueryFilter implements QueryFilter {
-  constructor(private pattern: string) {}
+  constructor(private pattern: string) { }
 
   buildQuery(): Record<string, any> {
     return {
@@ -44,7 +44,7 @@ export class ProjectNameQueryFilter implements QueryFilter {
  * Query filter for project keys
  */
 export class ProjectKeyQueryFilter implements QueryFilter {
-  constructor(private keys: string[]) {}
+  constructor(private keys: string[]) { }
 
   buildQuery(): Record<string, any> {
     return {
@@ -61,19 +61,19 @@ export class ProjectKeyQueryFilter implements QueryFilter {
  * Query filter for analyzed date range
  */
 export class AnalyzedDateQueryFilter implements QueryFilter {
-  constructor(private from?: Date, private to?: Date) {}
+  constructor(private from?: Date, private to?: Date) { }
 
   buildQuery(): Record<string, any> {
     const params: Record<string, any> = {};
-    
+
     if (this.from) {
       params.analyzedBefore = this.formatDateForApi(this.to || new Date());
     }
-    
+
     if (this.to) {
       params.analyzedBefore = this.formatDateForApi(this.to);
     }
-    
+
     return params;
   }
 
@@ -102,12 +102,17 @@ export class FetchSonarQubeClient implements SonarQubeClient {
 
   /**
    * Authenticate with SonarQube server
+   * For SonarQube 9.9, uses HTTP Basic Authentication with token:password format
    */
   async authenticate(token: string): Promise<void> {
     this.authToken = token;
+
+    // For SonarQube 9.9: encode token with colon suffix as Base64
+    const auth = Buffer.from(`${token}:`).toString('base64');
+
     this.baseHeaders = {
       ...this.baseHeaders,
-      'Authorization': `Bearer ${token}`,
+      'Authorization': `Basic ${auth}`,
     };
 
     // Test authentication by making a simple API call
@@ -130,7 +135,7 @@ export class FetchSonarQubeClient implements SonarQubeClient {
    */
   async fetchProjects(filters: QueryFilter[] = []): Promise<ProjectData[]> {
     const params = this.combineFilterParams(filters);
-    
+
     try {
       const response = await this.makeRequest('/api/projects/search', {
         method: 'GET',
@@ -211,10 +216,11 @@ export class FetchSonarQubeClient implements SonarQubeClient {
     } = {}
   ): Promise<any> {
     const { method = 'GET', params, body } = options;
-    
+
     let url = `${this.config.baseUrl}${endpoint}`;
-    
-    if (params && Object.keys(params).length > 0) {
+
+    // For GET requests, add params as query string
+    if (method === 'GET' && params && Object.keys(params).length > 0) {
       const searchParams = new URLSearchParams();
       for (const [key, value] of Object.entries(params)) {
         if (value !== undefined && value !== null) {
@@ -227,11 +233,31 @@ export class FetchSonarQubeClient implements SonarQubeClient {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.config.timeout || 10000);
 
+    // Prepare headers and body based on method and content type
+    let requestHeaders = { ...this.baseHeaders };
+    let requestBody: string | undefined;
+
+    if (method === 'POST' && body) {
+      // For SonarQube 9.9, POST requests expect form data
+      if (typeof body === 'object' && !Buffer.isBuffer(body)) {
+        requestHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
+        const formData = new URLSearchParams();
+        for (const [key, value] of Object.entries(body)) {
+          if (value !== undefined && value !== null) {
+            formData.append(key, String(value));
+          }
+        }
+        requestBody = formData.toString();
+      } else {
+        requestBody = body;
+      }
+    }
+
     try {
       const response = await fetch(url, {
         method,
-        headers: this.baseHeaders,
-        body: body ? JSON.stringify(body) : undefined,
+        headers: requestHeaders,
+        body: requestBody,
         signal: controller.signal,
       });
 
@@ -249,11 +275,11 @@ export class FetchSonarQubeClient implements SonarQubeClient {
       return await response.json();
     } catch (error) {
       clearTimeout(timeoutId);
-      
+
       if (error instanceof SonarQubeApiError) {
         throw error;
       }
-      
+
       throw new SonarQubeApiError(
         `Network error: ${error instanceof Error ? error.message : 'Unknown error'}`,
         undefined,
@@ -267,12 +293,12 @@ export class FetchSonarQubeClient implements SonarQubeClient {
    */
   private combineFilterParams(filters: QueryFilter[]): Record<string, any> {
     const combinedParams: Record<string, any> = {};
-    
+
     for (const filter of filters) {
       const params = filter.getApiParams();
       Object.assign(combinedParams, params);
     }
-    
+
     return combinedParams;
   }
 
@@ -304,7 +330,7 @@ export class FetchSonarQubeClient implements SonarQubeClient {
       } catch (error) {
         // Log error but continue processing other projects
         console.warn(`Failed to fetch data for project ${component.key}:`, error);
-        
+
         // Add project with minimal data
         projects.push({
           name: component.name,

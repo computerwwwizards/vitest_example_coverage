@@ -3,6 +3,7 @@
 /**
  * CLI interface for SonarQube Coverage Reporter
  */
+import 'dotenv/config'
 
 import { DefaultReportOrchestratorFactory, ReportConfigBuilder } from './implementations/default-report-orchestrator.js';
 import type { ReportConfig, ProgressCallback, ReportResult } from './types/orchestrator.js';
@@ -21,11 +22,11 @@ interface CliArgs {
  */
 function parseArgs(argv: string[]): CliArgs {
   const args: Partial<CliArgs> = {};
-  
+
   for (let i = 2; i < argv.length; i++) {
     const arg = argv[i];
     const nextArg = argv[i + 1];
-    
+
     switch (arg) {
       case '--sonar-url':
       case '-u':
@@ -35,7 +36,7 @@ function parseArgs(argv: string[]): CliArgs {
         args.sonarUrl = nextArg;
         i++;
         break;
-        
+
       case '--sonar-token':
       case '-t':
         if (!nextArg || nextArg.startsWith('-')) {
@@ -44,7 +45,7 @@ function parseArgs(argv: string[]): CliArgs {
         args.sonarToken = nextArg;
         i++;
         break;
-        
+
       case '--threshold':
       case '-T':
         if (!nextArg || nextArg.startsWith('-')) {
@@ -57,7 +58,7 @@ function parseArgs(argv: string[]): CliArgs {
         args.threshold = threshold;
         i++;
         break;
-        
+
       case '--output':
       case '-o':
         if (!nextArg || nextArg.startsWith('-')) {
@@ -66,12 +67,12 @@ function parseArgs(argv: string[]): CliArgs {
         args.output = nextArg;
         i++;
         break;
-        
+
       case '--help':
       case '-h':
         args.help = true;
         break;
-        
+
       default:
         if (arg.startsWith('-')) {
           throw new Error(`Unknown option: ${arg}`);
@@ -79,7 +80,7 @@ function parseArgs(argv: string[]): CliArgs {
         break;
     }
   }
-  
+
   return {
     sonarUrl: args.sonarUrl || '',
     sonarToken: args.sonarToken || '',
@@ -157,24 +158,24 @@ function createProgressCallback(): ProgressCallback {
 async function main(): Promise<void> {
   try {
     const args = parseArgs(process.argv);
-    
+
     if (args.help) {
       showHelp();
       return;
     }
-    
+
     // Get configuration from args or environment
     const sonarUrl = args.sonarUrl || process.env.SONAR_URL;
     const sonarToken = args.sonarToken || process.env.SONAR_TOKEN;
-    
+
     if (!sonarUrl) {
       throw new Error('SonarQube URL is required. Use --sonar-url or set SONAR_URL environment variable.');
     }
-    
+
     if (!sonarToken) {
       throw new Error('SonarQube token is required. Use --sonar-token or set SONAR_TOKEN environment variable.');
     }
-    
+
     // Build configuration
     const configBuilder = ReportConfigBuilder
       .create()
@@ -195,34 +196,26 @@ async function main(): Promise<void> {
           includePercentSign: false,
         },
       });
-    
+
     if (args.output) {
       configBuilder.outputPath(args.output);
     }
-    
+
     const config: ReportConfig = configBuilder.build();
-    
-    // Create orchestrator and generate report
-    const factory = new DefaultReportOrchestratorFactory();
-    const orchestrator = factory.create(
-      // These would normally be dependency-injected
-      {} as any, // client
-      [], // filters  
-      {} as any, // classifier
-      {} as any  // reporter
-    );
-    
+
+    const orchestrator = DefaultReportOrchestratorFactory.createWithDefaults(config.sonarqube!);
+
     console.error('🚀 Starting SonarQube coverage report generation...');
-    
+
     const result = await orchestrator.generateReport(config, createProgressCallback());
-    
+
     // Output CSV content
     if (args.output) {
       console.error(`💾 Report saved to: ${args.output}`);
     } else {
       console.log(result.csvContent);
     }
-    
+
   } catch (error) {
     console.error('❌ Error:', error instanceof Error ? error.message : 'Unknown error');
     process.exit(1);

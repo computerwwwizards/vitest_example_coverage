@@ -16,6 +16,11 @@ import type { CoverageClassifier } from '../types/classification.js';
 import type { CsvReporter } from '../types/csv.js';
 import type { ProjectData, CategorizedProject } from '../types/project.js';
 
+
+import { FetchSonarQubeClient } from './fetch-sonarqube-client.js';
+import { SpanishCoverageClassifier } from './spanish-coverage-classifier.js';
+import { PapaparseCsvReporter } from './papaparse-csv-reporter.js';
+
 /**
  * Main orchestrator implementation
  */
@@ -25,7 +30,7 @@ export class DefaultReportOrchestrator implements ReportOrchestrator {
     private filters: FilterStrategy[],
     private classifier: CoverageClassifier,
     private reporter: CsvReporter
-  ) {}
+  ) { }
 
   /**
    * Generate a complete coverage categorization report
@@ -84,6 +89,7 @@ export class DefaultReportOrchestrator implements ReportOrchestrator {
       return result;
 
     } catch (error) {
+      console.log("🚀 ~ DefaultReportOrchestrator ~ generateReport ~ error:", error)
       throw this.wrapError(error, 'generate');
     }
   }
@@ -174,12 +180,12 @@ export class DefaultReportOrchestrator implements ReportOrchestrator {
    */
   private calculateCategoryCounts(projects: CategorizedProject[]): Record<string, number> {
     const counts: Record<string, number> = {};
-    
+
     for (const project of projects) {
       const category = project.category;
       counts[category] = (counts[category] || 0) + 1;
     }
-    
+
     return counts;
   }
 
@@ -189,7 +195,7 @@ export class DefaultReportOrchestrator implements ReportOrchestrator {
   private wrapError(error: unknown, phase: ReportError['phase']): ReportError {
     const message = error instanceof Error ? error.message : 'Unknown error occurred';
     const cause = error instanceof Error ? error : undefined;
-    
+
     return {
       name: 'ReportError',
       message: `Error in ${phase} phase: ${message}`,
@@ -217,9 +223,6 @@ export class DefaultReportOrchestratorFactory implements ReportOrchestratorFacto
    */
   static createWithDefaults(sonarqubeConfig: ReportConfig['sonarqube']): ReportOrchestrator {
     // Import implementations (these would normally be dependency-injected)
-    const { FetchSonarQubeClient } = require('./fetch-sonarqube-client.js');
-    const { SpanishCoverageClassifier } = require('./spanish-coverage-classifier.js');
-    const { PapaparseCsvReporter } = require('./papaparse-csv-reporter.js');
 
     const client = new FetchSonarQubeClient(sonarqubeConfig);
     const classifier = new SpanishCoverageClassifier();
